@@ -115,15 +115,95 @@ function drawRink() {
     fill(200, 200, 200, 150);
     stroke(255, 0, 0);
     strokeWeight(dimensions[0] / 100);
-    rect(middle[0], middle[1], dimensions[0], dimensions[1], 10); // TODO: lower/remove angle at low sizes
+    // adjust corner curve based on canvas size
+    let angle = 10;
+    if (dimensions[0] < 300) angle = 10 * (dimensions[0] / 300);
+    // outer boundary
+    rect(middle[0], middle[1], dimensions[0], dimensions[1], angle);
+    // center circle
+    strokeWeight(dimensions[0] / 150);
+    stroke(0, 0, 255);
+    noFill();
+    ellipse(middle[0], middle[1], dimensions[1] / 3.5, dimensions[1] / 3.5);
+    // blue lines
+    strokeCap(PROJECT);
+    line(
+        middle[0] - dimensions[0] / 6,
+        middle[1] - dimensions[1] / 2 + dimensions[0] / 200 + dimensions[0] / 300,
+        middle[0] - dimensions[0] / 6,
+        middle[1] + dimensions[1] / 2 - dimensions[0] / 200 - dimensions[1] / 175 // unclear why 175 works better than 300
+    );
+    line(
+        middle[0] + dimensions[0] / 6,
+        middle[1] - dimensions[1] / 2 + dimensions[0] / 200 + dimensions[0] / 300,
+        middle[0] + dimensions[0] / 6,
+        middle[1] + dimensions[1] / 2 - dimensions[0] / 200 - dimensions[1] / 175
+    );
+    // four circles
+    strokeCap(ROUND);
+    stroke(255, 0, 0);
+    ellipse(middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3, dimensions[1] / 5);
+    ellipse(middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3, dimensions[1] / 5);
+    ellipse(middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3, dimensions[1] / 5);
+    ellipse(middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3, dimensions[1] / 5);
+    // lines coming off circles
+    line(middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 - dimensions[1] / 10,
+        middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 - dimensions[1] / 10 - dimensions[1] / 35);
+    line(middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 + dimensions[1] / 10,
+        middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 + dimensions[1] / 10 + dimensions[1] / 35);
+    line(middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 - dimensions[1] / 10,
+        middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 - dimensions[1] / 10 - dimensions[1] / 35);
+    line(middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 + dimensions[1] / 10,
+        middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 + dimensions[1] / 10 + dimensions[1] / 35);
+    line(middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 - dimensions[1] / 10,
+        middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 - dimensions[1] / 10 - dimensions[1] / 35);
+    line(middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 + dimensions[1] / 10,
+        middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 + dimensions[1] / 10 + dimensions[1] / 35);
+    line(middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 - dimensions[1] / 10,
+        middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 - dimensions[1] / 10 - dimensions[1] / 35);
+    line(middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 + dimensions[1] / 10,
+        middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 + dimensions[1] / 10 + dimensions[1] / 35);
+    // center line
+    line(middle[0], middle[1] - dimensions[1] / 2, middle[0], middle[1] + dimensions[1] / 2);
+    // center point
+    strokeWeight(dimensions[0] / 50);
+    point(middle[0], middle[1]);
+    // four red points
+    point(middle[0] - dimensions[0] / 8, middle[1] - dimensions[1] / 3);
+    point(middle[0] - dimensions[0] / 8, middle[1] + dimensions[1] / 3);
+    point(middle[0] + dimensions[0] / 8, middle[1] - dimensions[1] / 3);
+    point(middle[0] + dimensions[0] / 8, middle[1] + dimensions[1] / 3);
+    // red points in circles
+    point(middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3);
+    point(middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3);
+    point(middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3);
+    point(middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3);
 }
 
 function drawGoals() {
     fill(255, 50, 255, 80);
     strokeWeight(dimensions[0] / 150);
+    stroke(255, 0, 0);
     rectMode(CENTER);
     rect(middle[0] - dimensions[0] / 2 + dimensions[0] / 20, middle[1], dimensions[0] / 10, dimensions[1] * goalHeight, 0, 40, 40, 0);
     rect(middle[0] + dimensions[0] / 2 - dimensions[0] / 20, middle[1], dimensions[0] / 10, dimensions[1] * goalHeight, 40, 0, 0, 40);
+    // green lines
+    stroke(0, 255, 0);
+    strokeWeight(dimensions[0] / 200);
+    strokeCap(SQUARE);
+    line(
+        middle[0] - dimensions[0] / 2 + dimensions[0] / 400,
+        middle[1] - dimensions[1] * goalHeight / 2 + dimensions[0] / 300,
+        middle[0] - dimensions[0] / 2 + dimensions[0] / 400,
+        middle[1] + dimensions[1] * goalHeight / 2 - dimensions[0] / 300
+    );
+    line(
+        middle[0] + dimensions[0] / 2 - dimensions[0] / 400,
+        middle[1] - dimensions[1] * goalHeight / 2 + dimensions[0] / 300,
+        middle[0] + dimensions[0] / 2 - dimensions[0] / 400,
+        middle[1] + dimensions[1] * goalHeight / 2 - dimensions[0] / 300
+    );
+    strokeCap(ROUND);
 }
 
 function drawPuck() {
