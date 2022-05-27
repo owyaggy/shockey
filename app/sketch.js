@@ -14,6 +14,7 @@ let fs; // static friction of the surface
 let fk; // kinetic friction of the surface
 let pauseGame; // boolean pause game variable
 let coulombConstant; // coulomb's law constant
+let wallBounce; // percent of momentum absorbed by walls upon collisions
 
 /**
  * Notes:
@@ -48,12 +49,12 @@ function setup() {
     cpu = {
         "x": 17.5 - 4,
         "y": 10 / 2,
-        "xv": 0.1,
-        "yv": 0.3,
+        "xv": 0,
+        "yv": 3,
         "q": universalQ, // TODO: accurate charge
         "difficulty": 1 // TODO: implement difficulty
     }
-    goalHeight = 0.15;
+    goalHeight = 0.5;
     dimensions = checkRatio();
     startX = (middle[0] - dimensions[0] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
     startY = (middle[1] - dimensions[1] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
@@ -63,6 +64,7 @@ function setup() {
     fk = 2.94;
     pauseGame = false;
     coulombConstant = 9 * Math.pow(10, 9);
+    wallBounce = 0.5;
 }
 
 function draw() {
@@ -226,16 +228,16 @@ function drawPuck() {
 }
 
 function updatePuck() {
-    let distance = Math.sqrt(
+    let userDistance = Math.sqrt(
         Math.pow(puck["x"] - striker["x"], 2) + Math.pow(puck["y"] - striker["y"], 2)
     );
     let userForce; // force in N of user striker charge on puck charge
-    userForce = coulombConstant * puck["q"] * striker["q"] / distance;
-    distance = Math.sqrt(
+    userForce = coulombConstant * puck["q"] * striker["q"] / Math.pow(userDistance, 2);
+    let cpuDistance = Math.sqrt(
         Math.pow(puck["x"] - cpu["x"], 2) + Math.pow(puck["y"] - cpu["y"], 2)
     );
     let cpuForce; // force in N of CPU striker on puck charge
-    cpuForce = coulombConstant * puck["q"] * cpu["q"] / distance;
+    cpuForce = coulombConstant * puck["q"] * cpu["q"] / Math.pow(cpuDistance, 2);
     let userAngle = calculateAngle(striker["x"], striker["y"], puck["x"], puck["y"]);
     let cpuAngle = calculateAngle(cpu["x"], cpu["y"], puck["x"], puck["y"]);
     let resultant = vectorAddition(userForce, userAngle, cpuForce, cpuAngle); // in form [magnitude, angle]
@@ -263,35 +265,45 @@ function updatePuck() {
     let y = (puck["y"] / 10) * dimensions[1] + (height - dimensions[1]) / 2;
     if (x < startX) {
         x = startX;
-        puck["xv"] *= -0.5;
+        puck["xv"] *= -wallBounce;
     }
     if (x > width - startX) {
         x = width - startX;
-        puck["xv"] *= -0.5;
+        puck["xv"] *= -wallBounce;
     }
     if (y < startY) {
         y = startY;
-        puck["yv"] *= -0.5;
+        puck["yv"] *= -wallBounce;
     }
     if (y > height - startY) {
         y = height - startY;
-        puck["yv"] *= -0.5;
+        puck["yv"] *= -wallBounce;
     }
     puck["x"] = (x - (width - dimensions[0]) / 2) / dimensions[0] * 17.5;
     puck["y"] = (y - (height - dimensions[1]) / 2) / dimensions[1] * 10.0;
+    /*console.log(
+        "userDistance: ", userDistance,
+        " userForce: ", userForce,
+        " userAngle: ", userAngle / Math.PI, "π",
+        " cpuDistance: ", cpuDistance,
+        " cpuForce: ", cpuForce,
+        " cpuAngle: ", cpuAngle / Math.PI, "π",
+        " resultant magnitude w/o friction: ", resultant[0] + frictionForce,
+        " resultant angle: ", resultant[1] / Math.PI, "π"
+    );*/
 }
 
 function calculateAngle(x1, y1, x2, y2) {
-    // consider striker/CPU at origin (x1, y1) --> (0, 0)
+    // consider striker/CPU at origin (x1, y1)
     let angle; // resultant angle to be returned
-    if (x2 >= x1 && y2 >= y1) { // puck in quadrant I:
-        angle = Math.atan((y2 - y1) / (x2 - x1));
-    } else if (x2 < x1 && y2 >= y1) { // puck in quadrant II:
-        angle = Math.atan((y2 - y1) / (x1 - x2)) + Math.PI / 2;
-    } else if (x2 < x1 && y2 < y1) { // puck in quadrant III:
-        angle = Math.atan((y1 - y2) / (x1 - x2)) + Math.PI;
+    if (x2 >= x1 && y2 <= y1) { // puck in quadrant I:
+        angle = Math.atan((y1 - y2) / (x2 - x1));
+    } else if (x2 < x1 && y2 <= y1) { // puck in quadrant II:
+        angle = Math.atan((y1 - y2) / (x1 - x2)) + Math.PI / 2;
+    } else if (x2 < x1 && y2 > y1) { // puck in quadrant III:
+        angle = Math.atan((y2 - y1) / (x1 - x2)) + Math.PI;
     } else { // puck in quadrant IV:
-        angle = Math.atan((y1 - y2) / (x2 - x1)) + 3 * Math.PI / 2;
+        angle = Math.atan((y2 - y1) / (x2 - x1)) + 3 * Math.PI / 2;
     }
     return angle;
 }
@@ -303,8 +315,12 @@ function vectorAddition(force1, angle1, force2, angle2) {
     let angle;
     xforce = force1 * Math.cos(angle1) + force2 * Math.cos(angle2);
     yforce = force1 * Math.sin(angle1) + force2 * Math.sin(angle2);
-    angle = Math.atan(yforce / xforce);
+    angle = 2 * Math.PI - Math.atan(-1 * yforce / xforce);
     magnitude = Math.sqrt(Math.pow(xforce, 2) + Math.pow(yforce, 2));
+    /*console.log(
+        "xforce: ", xforce,
+        " yforce: ", yforce
+    );*/
     return [magnitude, angle];
 }
 
@@ -355,6 +371,10 @@ function drawCPU() {
     }
     let x = (cpu["x"] / 17.5) * dimensions[0] + (width - dimensions[0]) / 2;
     let y = (cpu["y"] / 10) * dimensions[1] + (height - dimensions[1]) / 2;
+    // simple movement simulation
+    if (y >= middle[1] + dimensions[1] * 0.3) cpu["yv"] *= -1;
+    if (y <= middle[1] - dimensions[1] * 0.3) cpu["yv"] *= -1;
+    // end simple movement simulation
     if (x < startX) x = startX;
     if (x > width - startX) x = width - startX;
     if (y < startY) y = startY;
@@ -389,7 +409,7 @@ function drawArrows() {
 
 function keyPressed() {
     if (keyCode == 32) striker["q"] *= -1;
-    if (keyCode == 80) pauseGame = true;
+    if (keyCode == 80) pauseGame = !pauseGame;
 }
 
 function windowResized() {
