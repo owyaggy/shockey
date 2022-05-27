@@ -1,12 +1,19 @@
-let middle;
-let dimensions;
-let puck;
-let startX;
-let startY;
-let striker;
-let cpu;
-let fr;
+let middle; // [x, y] of middle of rink and window
+let dimensions; // [width, height] of rink
+let puck; // dictionary of puck info
+let startX; // x value of puck when touching upper rink border
+let startY; // y value of puck when touching upper rink border
+let striker; // dictionary of user striker info
+let cpu; // dictionary of cpu striker info
+let fr; // framerate
 let goalHeight; // as multiplier of height of rink
+let arrows; // whether electric field arrows shown
+let ev; // magnitude of 1 electron charge
+let gravity; // acceleration due to gravity
+let fs; // static friction of the surface
+let fk; // kinetic friction of the surface
+let pauseGame; // boolean pause game variable
+let coulombConstant; // coulomb's law constant
 
 /**
  * Notes:
@@ -17,40 +24,45 @@ let goalHeight; // as multiplier of height of rink
  */
 
 function setup() {
-  // put setup code here
     var cnv = createCanvas(windowWidth, windowHeight);
     cnv.style('display', 'block');
     background(255);
     fr = 60;
     frameRate(fr);
     middle = [width/2, height/2];
+    ev = 1.6 * Math.pow(10, -19);
+    let universalQ = -7 * ev * Math.pow(10, 14);
     puck = {
         "x": 17.5 / 2, // x-position
         "y": 10.0 / 2, // y-position
         "xv": 0, // x-velocity
         "yv": 0, // y-velocity
-        "xa": 0, // x-acceleration
-        "ya": 0, // y-acceleration
-        "mass": 0.5, // mass (kg)
-        "charge": -1 // TODO: accurate charge
+        "mass": 2, // mass (kg)
+        "q": universalQ // TODO: accurate charge
     }
     striker = {
         "x": 4,
         "y": 10 / 2,
-        "charge": -1 // TODO: accurate charge
+        "q": universalQ // TODO: accurate charge
     }
     cpu = {
         "x": 17.5 - 4,
         "y": 10 / 2,
         "xv": 0.1,
         "yv": 0.3,
-        "charge": -1, // TODO: accurate charge
+        "q": universalQ, // TODO: accurate charge
         "difficulty": 1 // TODO: implement difficulty
     }
-    goalHeight = 0.7;
+    goalHeight = 0.15;
     dimensions = checkRatio();
     startX = (middle[0] - dimensions[0] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
     startY = (middle[1] - dimensions[1] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
+    arrows = false;
+    gravity = 9.81;
+    fs = 3.55;
+    fk = 2.94;
+    pauseGame = false;
+    coulombConstant = 9 * Math.pow(10, 9);
 }
 
 function draw() {
@@ -58,22 +70,13 @@ function draw() {
 
     drawScoreboard(); // draws scoreboard at top of screen
     drawInfo(); // draws info at bottom of screen
-    dimensions = checkRatio();
     drawRink();
     drawGoals();
+    if (arrows) drawArrows();
     drawPuck();
     updatePuck();
     drawStriker();
     drawCPU();
-
-    /*stroke(255);
-    strokeWeight(1);
-    // line(startX, height / 2, width / 2, height / 2);
-    noFill();
-    ellipseMode(CORNERS);
-    ellipse(startX, startY, width - startX, height - startY);
-    ellipseMode(CENTER);
-    ellipse(width/2, height/2, dimensions[0], dimensions[1]);//*/
 }
 
 function updateBackground() {
@@ -120,64 +123,69 @@ function drawRink() {
     if (dimensions[0] < 300) angle = 10 * (dimensions[0] / 300);
     // outer boundary
     rect(middle[0], middle[1], dimensions[0], dimensions[1], angle);
-    // center circle
-    strokeWeight(dimensions[0] / 150);
-    stroke(0, 0, 255);
-    noFill();
-    ellipse(middle[0], middle[1], dimensions[1] / 3.5, dimensions[1] / 3.5);
-    // blue lines
-    strokeCap(PROJECT);
-    line(
-        middle[0] - dimensions[0] / 6,
-        middle[1] - dimensions[1] / 2 + dimensions[0] / 200 + dimensions[0] / 300,
-        middle[0] - dimensions[0] / 6,
-        middle[1] + dimensions[1] / 2 - dimensions[0] / 200 - dimensions[1] / 175 // unclear why 175 works better than 300
-    );
-    line(
-        middle[0] + dimensions[0] / 6,
-        middle[1] - dimensions[1] / 2 + dimensions[0] / 200 + dimensions[0] / 300,
-        middle[0] + dimensions[0] / 6,
-        middle[1] + dimensions[1] / 2 - dimensions[0] / 200 - dimensions[1] / 175
-    );
-    // four circles
-    strokeCap(ROUND);
-    stroke(255, 0, 0);
-    ellipse(middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3, dimensions[1] / 5);
-    ellipse(middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3, dimensions[1] / 5);
-    ellipse(middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3, dimensions[1] / 5);
-    ellipse(middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3, dimensions[1] / 5);
-    // lines coming off circles
-    line(middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 - dimensions[1] / 10,
-        middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 - dimensions[1] / 10 - dimensions[1] / 35);
-    line(middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 + dimensions[1] / 10,
-        middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 + dimensions[1] / 10 + dimensions[1] / 35);
-    line(middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 - dimensions[1] / 10,
-        middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 - dimensions[1] / 10 - dimensions[1] / 35);
-    line(middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 + dimensions[1] / 10,
-        middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 + dimensions[1] / 10 + dimensions[1] / 35);
-    line(middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 - dimensions[1] / 10,
-        middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 - dimensions[1] / 10 - dimensions[1] / 35);
-    line(middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 + dimensions[1] / 10,
-        middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 + dimensions[1] / 10 + dimensions[1] / 35);
-    line(middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 - dimensions[1] / 10,
-        middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 - dimensions[1] / 10 - dimensions[1] / 35);
-    line(middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 + dimensions[1] / 10,
-        middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 + dimensions[1] / 10 + dimensions[1] / 35);
+    if (!arrows) {
+        // center circle
+        strokeWeight(dimensions[0] / 150);
+        stroke(0, 0, 255);
+        noFill();
+        ellipse(middle[0], middle[1], dimensions[1] / 3.5, dimensions[1] / 3.5);
+        // blue lines
+        strokeCap(PROJECT);
+        line(
+            middle[0] - dimensions[0] / 6,
+            middle[1] - dimensions[1] / 2 + dimensions[0] / 200 + dimensions[0] / 300,
+            middle[0] - dimensions[0] / 6,
+            middle[1] + dimensions[1] / 2 - dimensions[0] / 200 - dimensions[1] / 175 // unclear why 175 works better than 300
+        );
+        line(
+            middle[0] + dimensions[0] / 6,
+            middle[1] - dimensions[1] / 2 + dimensions[0] / 200 + dimensions[0] / 300,
+            middle[0] + dimensions[0] / 6,
+            middle[1] + dimensions[1] / 2 - dimensions[0] / 200 - dimensions[1] / 175
+        );
+        // four circles
+        strokeCap(ROUND);
+        stroke(255, 0, 0);
+        ellipse(middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3, dimensions[1] / 5);
+        ellipse(middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3, dimensions[1] / 5);
+        ellipse(middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3, dimensions[1] / 5);
+        ellipse(middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3, dimensions[1] / 5);
+        // lines coming off circles
+        line(middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 - dimensions[1] / 10,
+            middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 - dimensions[1] / 10 - dimensions[1] / 35);
+        line(middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 + dimensions[1] / 10,
+            middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 + dimensions[1] / 10 + dimensions[1] / 35);
+        line(middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 - dimensions[1] / 10,
+            middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 - dimensions[1] / 10 - dimensions[1] / 35);
+        line(middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 + dimensions[1] / 10,
+            middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 + dimensions[1] / 10 + dimensions[1] / 35);
+        line(middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 - dimensions[1] / 10,
+            middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 - dimensions[1] / 10 - dimensions[1] / 35);
+        line(middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 + dimensions[1] / 10,
+            middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3 + dimensions[1] / 10 + dimensions[1] / 35);
+        line(middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 - dimensions[1] / 10,
+            middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 - dimensions[1] / 10 - dimensions[1] / 35);
+        line(middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 + dimensions[1] / 10,
+            middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3 + dimensions[1] / 10 + dimensions[1] / 35);
+    }
     // center line
+    strokeWeight(dimensions[0] / 150);
     line(middle[0], middle[1] - dimensions[1] / 2, middle[0], middle[1] + dimensions[1] / 2);
     // center point
     strokeWeight(dimensions[0] / 50);
     point(middle[0], middle[1]);
-    // four red points
-    point(middle[0] - dimensions[0] / 8, middle[1] - dimensions[1] / 3);
-    point(middle[0] - dimensions[0] / 8, middle[1] + dimensions[1] / 3);
-    point(middle[0] + dimensions[0] / 8, middle[1] - dimensions[1] / 3);
-    point(middle[0] + dimensions[0] / 8, middle[1] + dimensions[1] / 3);
-    // red points in circles
-    point(middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3);
-    point(middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3);
-    point(middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3);
-    point(middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3);
+    if (!arrows) {
+        // four red points
+        point(middle[0] - dimensions[0] / 8, middle[1] - dimensions[1] / 3);
+        point(middle[0] - dimensions[0] / 8, middle[1] + dimensions[1] / 3);
+        point(middle[0] + dimensions[0] / 8, middle[1] - dimensions[1] / 3);
+        point(middle[0] + dimensions[0] / 8, middle[1] + dimensions[1] / 3);
+        // red points in circles
+        point(middle[0] - dimensions[0] / 3.5, middle[1] - dimensions[1] / 3);
+        point(middle[0] - dimensions[0] / 3.5, middle[1] + dimensions[1] / 3);
+        point(middle[0] + dimensions[0] / 3.5, middle[1] - dimensions[1] / 3);
+        point(middle[0] + dimensions[0] / 3.5, middle[1] + dimensions[1] / 3);
+    }
 }
 
 function drawGoals() {
@@ -218,36 +226,116 @@ function drawPuck() {
 }
 
 function updatePuck() {
-    puck["x"] += puck["xv"];
-    puck["y"] += puck["yv"];
+    let distance = Math.sqrt(
+        Math.pow(puck["x"] - striker["x"], 2) + Math.pow(puck["y"] - striker["y"], 2)
+    );
+    let userForce; // force in N of user striker charge on puck charge
+    userForce = coulombConstant * puck["q"] * striker["q"] / distance;
+    distance = Math.sqrt(
+        Math.pow(puck["x"] - cpu["x"], 2) + Math.pow(puck["y"] - cpu["y"], 2)
+    );
+    let cpuForce; // force in N of CPU striker on puck charge
+    cpuForce = coulombConstant * puck["q"] * cpu["q"] / distance;
+    let userAngle = calculateAngle(striker["x"], striker["y"], puck["x"], puck["y"]);
+    let cpuAngle = calculateAngle(cpu["x"], cpu["y"], puck["x"], puck["y"]);
+    let resultant = vectorAddition(userForce, userAngle, cpuForce, cpuAngle); // in form [magnitude, angle]
+    let frictionForce = puck["mass"] * gravity;
+    if (puck["xv"] * puck["yv"] === 0) frictionForce *= fs;
+    else frictionForce *= fk;
+    resultant[0] -= frictionForce;
+    let xforce;
+    let yforce;
+    xforce = resultant[0] * Math.cos(resultant[1]);
+    yforce = resultant[0] * Math.sin(resultant[1]);
+    let xacceleration;
+    let yacceleration;
+    xacceleration = xforce / puck["mass"];
+    yacceleration = yforce / puck["mass"];
+    xacceleration /= fr;
+    yacceleration /= fr;
+    puck["xv"] += xacceleration;
+    puck["yv"] += yacceleration;
+    if (!pauseGame) {
+        puck["x"] += puck["xv"] / fr;
+        puck["y"] += puck["yv"] / fr;
+    }
+    let x = (puck["x"] / 17.5) * dimensions[0] + (width - dimensions[0]) / 2;
+    let y = (puck["y"] / 10) * dimensions[1] + (height - dimensions[1]) / 2;
+    if (x < startX) {
+        x = startX;
+        puck["xv"] *= -0.5;
+    }
+    if (x > width - startX) {
+        x = width - startX;
+        puck["xv"] *= -0.5;
+    }
+    if (y < startY) {
+        y = startY;
+        puck["yv"] *= -0.5;
+    }
+    if (y > height - startY) {
+        y = height - startY;
+        puck["yv"] *= -0.5;
+    }
+    puck["x"] = (x - (width - dimensions[0]) / 2) / dimensions[0] * 17.5;
+    puck["y"] = (y - (height - dimensions[1]) / 2) / dimensions[1] * 10.0;
+}
+
+function calculateAngle(x1, y1, x2, y2) {
+    // consider striker/CPU at origin (x1, y1) --> (0, 0)
+    let angle; // resultant angle to be returned
+    if (x2 >= x1 && y2 >= y1) { // puck in quadrant I:
+        angle = Math.atan((y2 - y1) / (x2 - x1));
+    } else if (x2 < x1 && y2 >= y1) { // puck in quadrant II:
+        angle = Math.atan((y2 - y1) / (x1 - x2)) + Math.PI / 2;
+    } else if (x2 < x1 && y2 < y1) { // puck in quadrant III:
+        angle = Math.atan((y1 - y2) / (x1 - x2)) + Math.PI;
+    } else { // puck in quadrant IV:
+        angle = Math.atan((y1 - y2) / (x2 - x1)) + 3 * Math.PI / 2;
+    }
+    return angle;
+}
+
+function vectorAddition(force1, angle1, force2, angle2) {
+    let xforce;
+    let yforce;
+    let magnitude;
+    let angle;
+    xforce = force1 * Math.cos(angle1) + force2 * Math.cos(angle2);
+    yforce = force1 * Math.sin(angle1) + force2 * Math.sin(angle2);
+    angle = Math.atan(yforce / xforce);
+    magnitude = Math.sqrt(Math.pow(xforce, 2) + Math.pow(yforce, 2));
+    return [magnitude, angle];
 }
 
 function drawStriker() {
-    if (striker["charge"] < 0) fill(0, 0, 255);
+    if (striker["q"] < 0) fill(0, 0, 255);
     else fill(255, 0, 0);
     noStroke();
     let x = (striker["x"] / 17.5) * dimensions[0] + (width - dimensions[0]) / 2;
     let y = (striker["y"] / 10) * dimensions[1] + (height - dimensions[1]) / 2;
-    if (mouseX < startX) {
-        cursor(ARROW);
-        x = startX;
-    } else if (mouseX >= startX && mouseX <= width - startX) {
-        noCursor();
-        x = mouseX;
-    } else {
-        cursor(ARROW);
-        x = width - startX;
-    }
-    if (mouseY < startY) {
-        cursor(ARROW);
-        y = startY;
-    } else if (mouseY >= startY && mouseY <= height - startY) {
-        if (mouseX < startX || mouseX > width - startX) cursor(ARROW);
-        else noCursor();
-        y = mouseY;
-    } else {
-        cursor(ARROW);
-        y = height - startY;
+    if (!pauseGame) {
+        if (mouseX < startX) {
+            cursor(ARROW);
+            x = startX;
+        } else if (mouseX >= startX && mouseX <= width - startX) {
+            noCursor();
+            x = mouseX;
+        } else {
+            cursor(ARROW);
+            x = width - startX;
+        }
+        if (mouseY < startY) {
+            cursor(ARROW);
+            y = startY;
+        } else if (mouseY >= startY && mouseY <= height - startY) {
+            if (mouseX < startX || mouseX > width - startX) cursor(ARROW);
+            else noCursor();
+            y = mouseY;
+        } else {
+            cursor(ARROW);
+            y = height - startY;
+        }
     }
     striker["x"] = (x - (width - dimensions[0]) / 2) / dimensions[0] * 17.5;
     striker["y"] = (y - (height - dimensions[1]) / 2) / dimensions[1] * 10.0;
@@ -255,15 +343,16 @@ function drawStriker() {
     fill(255);
     rectMode(CENTER);
     rect(x, y, dimensions[1] / 22, dimensions[1] / 90, 10);
-    if (striker["charge"] > 0) rect(x, y, dimensions[1] / 90, dimensions[1] / 22, 10);
+    if (striker["q"] > 0) rect(x, y, dimensions[1] / 90, dimensions[1] / 22, 10);
 }
-
 
 function drawCPU() {
     fill(0, 0, 255);
     noStroke();
-    cpu["x"] += cpu["xv"] / fr;
-    cpu["y"] += cpu["yv"] / fr;
+    if (!pauseGame) {
+        cpu["x"] += cpu["xv"] / fr;
+        cpu["y"] += cpu["yv"] / fr;
+    }
     let x = (cpu["x"] / 17.5) * dimensions[0] + (width - dimensions[0]) / 2;
     let y = (cpu["y"] / 10) * dimensions[1] + (height - dimensions[1]) / 2;
     if (x < startX) x = startX;
@@ -278,10 +367,29 @@ function drawCPU() {
     rect(x, y, dimensions[1] / 22, dimensions[1] / 90, 10);
 }
 
-function updateCPU() {}
+function drawArrows() {
+    let xinterval = dimensions[0] / 12;
+    let yinterval = dimensions[1] / 8;
+    let userForce;
+    let distance;
+    stroke(255);
+    strokeWeight(dimensions[0] / 75);
+    for (let x = 1; x < 12; x++) {
+        for (let y = 1; y < 8; y++) {
+            let a = x * xinterval + middle[0] - dimensions[0] / 2;
+            let b = y * yinterval + middle[1] - dimensions[1] / 2
+            point(a, b);
+            /* TODO: Draw the actual arrows
+            distance =
+            userForce = coulombConstant * striker["q"] / distance;
+            //line(a, b, )*/
+        }
+    }
+}
 
 function keyPressed() {
-    if (keyCode == 32) striker["charge"] *= -1;
+    if (keyCode == 32) striker["q"] *= -1;
+    if (keyCode == 80) pauseGame = true;
 }
 
 function windowResized() {
