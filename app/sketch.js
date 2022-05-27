@@ -54,7 +54,7 @@ function setup() {
         "q": universalQ, // TODO: accurate charge
         "difficulty": 1 // TODO: implement difficulty
     }
-    goalHeight = 0.5;
+    goalHeight = 0.4;
     dimensions = checkRatio();
     startX = (middle[0] - dimensions[0] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
     startY = (middle[1] - dimensions[1] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
@@ -232,19 +232,19 @@ function updatePuck() {
         Math.pow(puck["x"] - striker["x"], 2) + Math.pow(puck["y"] - striker["y"], 2)
     );
     let userForce; // force in N of user striker charge on puck charge
-    userForce = coulombConstant * puck["q"] * striker["q"] / Math.pow(userDistance, 2);
+    userForce = Math.abs(coulombConstant * puck["q"] * striker["q"] / Math.pow(userDistance, 2));
     let cpuDistance = Math.sqrt(
         Math.pow(puck["x"] - cpu["x"], 2) + Math.pow(puck["y"] - cpu["y"], 2)
     );
     let cpuForce; // force in N of CPU striker on puck charge
     cpuForce = coulombConstant * puck["q"] * cpu["q"] / Math.pow(cpuDistance, 2);
     let userAngle = calculateAngle(striker["x"], striker["y"], puck["x"], puck["y"]);
+    if (striker["q"] > 0) userAngle += Math.PI;
     let cpuAngle = calculateAngle(cpu["x"], cpu["y"], puck["x"], puck["y"]);
     let resultant = vectorAddition(userForce, userAngle, cpuForce, cpuAngle); // in form [magnitude, angle]
     let frictionForce = puck["mass"] * gravity;
     if (puck["xv"] * puck["yv"] === 0) frictionForce *= fs;
     else frictionForce *= fk;
-    resultant[0] -= frictionForce;
     let xforce;
     let yforce;
     xforce = resultant[0] * Math.cos(resultant[1]);
@@ -257,6 +257,11 @@ function updatePuck() {
     yacceleration /= fr;
     puck["xv"] += xacceleration;
     puck["yv"] += yacceleration;
+    /* TODO: figure out friction
+    xacceleration -= (frictionForce / puck["mass"]) * Math.cos(resultant[1]);
+    yacceleration -= (frictionForce / puck["mass"]) * Math.sin(resultant[1]);
+    if (puck["xv"] - xacceleration != Math.abs)
+     */
     if (!pauseGame) {
         puck["x"] += puck["xv"] / fr;
         puck["y"] += puck["yv"] / fr;
@@ -281,16 +286,19 @@ function updatePuck() {
     }
     puck["x"] = (x - (width - dimensions[0]) / 2) / dimensions[0] * 17.5;
     puck["y"] = (y - (height - dimensions[1]) / 2) / dimensions[1] * 10.0;
-    /*console.log(
-        "userDistance: ", userDistance,
-        " userForce: ", userForce,
-        " userAngle: ", userAngle / Math.PI, "π",
-        " cpuDistance: ", cpuDistance,
-        " cpuForce: ", cpuForce,
-        " cpuAngle: ", cpuAngle / Math.PI, "π",
-        " resultant magnitude w/o friction: ", resultant[0] + frictionForce,
-        " resultant angle: ", resultant[1] / Math.PI, "π"
-    );*/
+    if (pauseGame) {
+        console.log(
+            "userDistance: ", userDistance,
+            " userForce: ", userForce,
+            " userAngle: ", userAngle / Math.PI, "π",
+            " cpuDistance: ", cpuDistance,
+            " cpuForce: ", cpuForce,
+            " cpuAngle: ", cpuAngle / Math.PI, "π",
+            " resultant magnitude w/o friction: ", resultant[0] + frictionForce,
+            " resultant magnitude w/ friction: ", resultant[0],
+            " resultant angle: ", resultant[1] / Math.PI, "π"
+        );
+    }
 }
 
 function calculateAngle(x1, y1, x2, y2) {
@@ -313,9 +321,17 @@ function vectorAddition(force1, angle1, force2, angle2) {
     let yforce;
     let magnitude;
     let angle;
-    xforce = force1 * Math.cos(angle1) + force2 * Math.cos(angle2);
-    yforce = force1 * Math.sin(angle1) + force2 * Math.sin(angle2);
-    angle = 2 * Math.PI - Math.atan(-1 * yforce / xforce);
+    xforce = force1 * Math.cos(angle1) + (force2 * Math.cos(angle2));
+    yforce = force1 * Math.sin(angle1) + (force2 * Math.sin(angle2));
+    if (xforce >= 0 && yforce >= 0) {
+        angle = Math.atan(yforce / xforce);
+    } else if (xforce < 0 && yforce >= 0) {
+        angle = Math.PI - Math.atan(-1 * yforce / xforce);
+    } else if (xforce < 0 && yforce < 0) {
+        angle = Math.PI + Math.atan(yforce / xforce);
+    } else {
+        angle = 2 * Math.PI - Math.atan(-1 * yforce / xforce);
+    }
     magnitude = Math.sqrt(Math.pow(xforce, 2) + Math.pow(yforce, 2));
     /*console.log(
         "xforce: ", xforce,
