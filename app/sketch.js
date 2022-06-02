@@ -15,6 +15,8 @@ let fk; // kinetic friction of the surface
 let pauseGame; // boolean pause game variable
 let coulombConstant; // coulomb's law constant
 let wallBounce; // percent of momentum absorbed by walls upon collisions
+let score; // [user goals, cpu goals]
+let state; // start menu,
 
 /**
  * Notes:
@@ -54,7 +56,7 @@ function setup() {
         "q": universalQ, // TODO: accurate charge
         "difficulty": 1 // TODO: implement difficulty
     }
-    goalHeight = 0.4;
+    goalHeight = 0.8;
     dimensions = checkRatio();
     startX = (middle[0] - dimensions[0] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
     startY = (middle[1] - dimensions[1] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
@@ -65,6 +67,7 @@ function setup() {
     pauseGame = false;
     coulombConstant = 9 * Math.pow(10, 9);
     wallBounce = 0.5;
+    score = [0, 0];
 }
 
 function draw() {
@@ -79,6 +82,8 @@ function draw() {
     updatePuck();
     drawStriker();
     drawCPU();
+
+    drawMenu();
 }
 
 function updateBackground() {
@@ -242,9 +247,14 @@ function updatePuck() {
     if (striker["q"] > 0) userAngle += Math.PI;
     let cpuAngle = calculateAngle(cpu["x"], cpu["y"], puck["x"], puck["y"]);
     let resultant = vectorAddition(userForce, userAngle, cpuForce, cpuAngle); // in form [magnitude, angle]
-    let frictionForce = puck["mass"] * gravity;
-    if (puck["xv"] * puck["yv"] === 0) frictionForce *= fs;
-    else frictionForce *= fk;
+    let frictionForce = puck["mass"] * gravity; // calculate normal force
+    if (puck["xv"] === 0 && puck["yv"] === 0) {
+        frictionForce *= fs; // if puck is stationary multiply by static friction µ
+        if (Math.abs(frictionForce) > Math.abs(resultant[0])) {
+            resultant[0] = 0;
+        }
+    }
+    else frictionForce *= fk; // if puck is moving multiply by kinetic friction coefficient
     let xforce;
     let yforce;
     xforce = resultant[0] * Math.cos(resultant[1]);
@@ -257,6 +267,10 @@ function updatePuck() {
     yacceleration /= fr;
     puck["xv"] += xacceleration;
     puck["yv"] += yacceleration;
+    if (resultant[0] < frictionForce) { // if combined force from strikers is less than friction force
+        xacceleration = 0; // no acceleration
+        yacceleration = 0;
+    }
     /* TODO: figure out friction
     xacceleration -= (frictionForce / puck["mass"]) * Math.cos(resultant[1]);
     yacceleration -= (frictionForce / puck["mass"]) * Math.sin(resultant[1]);
@@ -269,10 +283,16 @@ function updatePuck() {
     let x = (puck["x"] / 17.5) * dimensions[0] + (width - dimensions[0]) / 2;
     let y = (puck["y"] / 10) * dimensions[1] + (height - dimensions[1]) / 2;
     if (x < startX) {
+        if (y > middle[1] - dimensions[1] * goalHeight / 2 && y < middle[1] + dimensions[1] * goalHeight /2) {
+            goal('cpu');
+        }
         x = startX;
         puck["xv"] *= -wallBounce;
     }
     if (x > width - startX) {
+        if (y > middle[1] - dimensions[1] * goalHeight / 2 && y < middle[1] + dimensions[1] * goalHeight /2) {
+            goal('user');
+        }
         x = width - startX;
         puck["xv"] *= -wallBounce;
     }
@@ -421,6 +441,19 @@ function drawArrows() {
             //line(a, b, )*/
         }
     }
+}
+
+function goal(scorer) {
+    if (scorer === "user") {
+        score[0]++;
+    }
+    if (scorer === "cpu") {
+        score[1]++;
+    }
+}
+
+function drawMenu() {
+
 }
 
 function keyPressed() {
