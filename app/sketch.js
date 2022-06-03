@@ -266,7 +266,7 @@ function updatePuck() {
     xacceleration /= fr;
     yacceleration /= fr;
     puck["xv"] += xacceleration;
-    puck["yv"] += yacceleration;
+    puck["yv"] -= yacceleration;
     if (resultant[0] < frictionForce) { // if combined force from strikers is less than friction force
         xacceleration = 0; // no acceleration
         yacceleration = 0;
