@@ -57,19 +57,19 @@ function setup() {
         "q": universalQ, // TODO: accurate charge
         "difficulty": 1 // TODO: implement difficulty
     }
-    goalHeight = 0.8;
+    goalHeight = 0.4;
     dimensions = checkRatio();
     startX = (middle[0] - dimensions[0] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
     startY = (middle[1] - dimensions[1] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
     arrows = false;
     gravity = 9.81;
-    fs = .08; // static friction µ
-    fk = .06; // kinetic friction µ
+    fs = .10; // static friction µ
+    fk = .08; // kinetic friction µ
     pauseGame = false;
     coulombConstant = 9 * Math.pow(10, 9);
     wallBounce = 1;
     score = [0, 0];
-    state = 'start';
+    state = 'play';
     animationMetrics = {
         "y": 0,
         "alpha": 255
@@ -128,6 +128,13 @@ function drawScoreboard() {
     rect(middle[0] * 0.8, 25, 45, 45, 10);
     fill(255, 0, 0);
     rect(width - middle[0] * 0.8, 25, 45, 45, 10);
+    fill(255);
+    noStroke();
+    textStyle(BOLD);
+    textSize(36);
+    textAlign(CENTER);
+    text(score[0], middle[0] * 0.8, 37);
+    text(score[1], middle[0] * 1.2, 37);
 }
 
 function drawInfo() {
