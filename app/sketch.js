@@ -16,7 +16,8 @@ let pauseGame; // boolean pause game variable
 let coulombConstant; // coulomb's law constant
 let wallBounce; // percent of momentum absorbed by walls upon collisions
 let score; // [user goals, cpu goals]
-let state; // start menu,
+let state; // 'start', 'about', 'how-to', 'mode', 'play'
+let animationMetrics; // variables to track intro animation
 
 /**
  * Notes:
@@ -62,32 +63,59 @@ function setup() {
     startY = (middle[1] - dimensions[1] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
     arrows = false;
     gravity = 9.81;
-    fs = 3.55;
-    fk = 2.94;
+    fs = .08; // static friction µ
+    fk = .06; // kinetic friction µ
     pauseGame = false;
     coulombConstant = 9 * Math.pow(10, 9);
-    wallBounce = 0.5;
+    wallBounce = 1;
     score = [0, 0];
+    state = 'start';
+    animationMetrics = {
+        "y": 0,
+        "alpha": 255
+    }
 }
 
 function draw() {
     updateBackground(); // automatically refreshes background
 
-    drawScoreboard(); // draws scoreboard at top of screen
-    drawInfo(); // draws info at bottom of screen
-    drawRink();
-    drawGoals();
-    if (arrows) drawArrows();
-    drawPuck();
-    updatePuck();
-    drawStriker();
-    drawCPU();
+    if (state == 'start') {
+        runIntro();
+    }
 
-    drawMenu();
+    if (state == 'play') {
+        drawScoreboard(); // draws scoreboard at top of screen
+        drawInfo(); // draws info at bottom of screen
+        drawRink();
+        drawGoals();
+        if (arrows) drawArrows();
+        drawPuck();
+        updatePuck();
+        drawStriker();
+        drawCPU();
+
+        drawMenu();
+    }
 }
 
 function updateBackground() {
     background(0, 0, 255);
+}
+
+function runIntro() {
+    textSize(dimensions[1] * animationMetrics["y"] / 2500);
+    textAlign(CENTER);
+    textStyle(BOLDITALIC);
+    fill(animationMetrics["alpha"] / 2, 120, 255 - animationMetrics['alpha'], animationMetrics['alpha']);
+    strokeWeight(dimensions[1] / 200);
+    stroke(animationMetrics['alpha'] / 2, animationMetrics['alpha'] / 2, animationMetrics['alpha'], animationMetrics['alpha']);
+    text("SHOCKEY", middle[0], animationMetrics["y"]);
+    animationMetrics['alpha']+= 60 / fr;
+    if (animationMetrics['y'] > middle[1]) animationMetrics['y'] = middle[1];
+    if (animationMetrics['y'] < middle[1]) animationMetrics['y'] += 75 / fr;
+    else {
+        animationMetrics['y'] == middle[1];
+    }
 }
 
 function drawScoreboard() {
