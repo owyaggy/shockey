@@ -119,9 +119,12 @@ function runIntro() {
         animationMetrics['y'] = 100;
         textSize(dimensions[1] * animationMetrics["y"] / 2500);
         animationMetrics["text"] = "SHOCKEY";
-        if (animationMetrics.bg > 75) {
+        if (animationMetrics.bg > 40) {
             animationMetrics.bg -= 75 / fr;
-        } else animationMetrics.bg = 75;
+        } else {
+            animationMetrics.bg = 40;
+            zap();
+        }
     }
     if (animationMetrics['y'] < 100) {
         animationMetrics['y'] += 40 / fr;
@@ -138,6 +141,15 @@ function runIntro() {
 }
 
 function zap() {
+    if (random() < 0.1) {
+        bolts.push(new Lightning(0, middle[1] * 1.05 + random() * height * 0.4, "right", 8, 0.005, 5));
+    }
+    for (let i = 0; i < bolts.length; i++) {
+        if (bolts[i] != null) {
+            bolts[i].animate();
+            if (bolts[i].a <= 0) bolts[i] = null;
+        }
+    }
 }
 
 function drawScoreboard() {
@@ -540,17 +552,17 @@ class Lightning {
         this.xs = 0;
         this.ys = 0;
         if (this.d === "right") {
-            this.xs = random() * 0.1;
+            this.xs = random() * 0.1 * speed;
             this.ys = (random() - 1) * 0.01;
         } else if (this.d === "left") {
-            this.xs = random() * -0.1;
+            this.xs = random() * -0.1 * speed;
             this.ys = (random() - 1) * 0.01;
         } else if (this.d === "down") {
             this.xs = (random() - 1) * 0.01;
-            this.ys = random() * 0.1;
+            this.ys = random() * 0.1 * speed;
         } else if (this.d === "up") {
             this.xs = (random() - 1) * 0.01;
-            this.ys = random() * -0.1;
+            this.ys = random() * -0.1 * speed;
         }
     }
 
@@ -560,8 +572,20 @@ class Lightning {
         strokeWeight(width * this.w);
         strokeCap(ROUND);
         point(this.x, this.y);
+        this.positions.push([this.x, this.y]);
         this.x += this.xs * width / fr;
         this.y += this.ys * height / fr;
+        this.a -= 160 / fr;
+        for (let i = 0; i < this.positions.length; i++) {
+            point(this.positions[i][0], this.positions[i][1]);
+        }
+        if (random() < 0.02) {
+            if (this.d == "right" || this.d == "left") {
+                this.ys = (random() - 1) * 0.1;
+            } else if (this.d == "up" || this.d == "down") {
+                this.xs = (random() - 1) * 0.1;
+            }
+        }
     }
 
     branch() {
