@@ -18,6 +18,7 @@ let wallBounce; // percent of momentum absorbed by walls upon collisions
 let score; // [user goals, cpu goals]
 let state; // 'start', 'about', 'how-to', 'mode', 'play'
 let animationMetrics; // variables to track intro animation
+let bolts; // array of lightning objects
 
 /**
  * Notes:
@@ -69,11 +70,14 @@ function setup() {
     coulombConstant = 9 * Math.pow(10, 9);
     wallBounce = 1;
     score = [0, 0];
-    state = 'play';
+    state = 'start';
     animationMetrics = {
         "y": 0,
-        "alpha": 255
+        "alpha": 75,
+        "text": "SHOCKEY",
+        "bg": 255
     }
+    bolts = [];
 }
 
 function draw() {
@@ -99,23 +103,41 @@ function draw() {
 }
 
 function updateBackground() {
-    background(0, 0, 255);
+    background(0, 0, animationMetrics.bg);
 }
 
 function runIntro() {
-    textSize(dimensions[1] * animationMetrics["y"] / 2500);
+    textSize(dimensions[1] * animationMetrics["y"] / 1000);
     textAlign(CENTER);
     textStyle(BOLDITALIC);
-    fill(animationMetrics["alpha"] / 2, 120, 255 - animationMetrics['alpha'], animationMetrics['alpha']);
+    fill(animationMetrics["alpha"], 150, 255 - animationMetrics['alpha'] + 40, animationMetrics['alpha'] * 0.7);
     strokeWeight(dimensions[1] / 200);
-    stroke(animationMetrics['alpha'] / 2, animationMetrics['alpha'] / 2, animationMetrics['alpha'], animationMetrics['alpha']);
-    text("SHOCKEY", middle[0], animationMetrics["y"]);
-    animationMetrics['alpha']+= 60 / fr;
-    if (animationMetrics['y'] > middle[1]) animationMetrics['y'] = middle[1];
-    if (animationMetrics['y'] < middle[1]) animationMetrics['y'] += 75 / fr;
-    else {
-        animationMetrics['y'] == middle[1];
+    stroke(255, 255, 255, animationMetrics['alpha']);
+    strokeCap(ROUND);
+    text(animationMetrics["text"], middle[0], animationMetrics["y"] / 100 * middle[1]);
+    if (animationMetrics['y'] >= 100) {
+        animationMetrics['y'] = 100;
+        textSize(dimensions[1] * animationMetrics["y"] / 2500);
+        animationMetrics["text"] = "SHOCKEY";
+        if (animationMetrics.bg > 75) {
+            animationMetrics.bg -= 75 / fr;
+        } else animationMetrics.bg = 75;
     }
+    if (animationMetrics['y'] < 100) {
+        animationMetrics['y'] += 40 / fr;
+        animationMetrics['alpha']+= 72 / fr;
+        animationMetrics["text"] = animationMetrics['text'].substring(1, 7) + animationMetrics['text'].substring(0, 1);
+    }
+    strokeWeight(dimensions[1] / 100);
+    stroke(255, 255, 255, animationMetrics["alpha"] * 0.9);
+    strokeCap(PROJECT);
+    line(0, middle[1] * 0.91, middle[0] * 0.0075 * animationMetrics["y"], middle[1] * 0.91);
+    line(0, middle[1] * 0.96, middle[0] * 0.0073 * animationMetrics["y"], middle[1] * 0.96);
+    line(width, middle[1] * 0.91, width - middle[0] * 0.0073 * animationMetrics["y"], middle[1] * 0.91);
+    line(width, middle[1] * 0.96, width - middle[0] * 0.0075 * animationMetrics["y"], middle[1] * 0.96);
+}
+
+function zap() {
 }
 
 function drawScoreboard() {
@@ -502,4 +524,47 @@ function windowResized() {
   dimensions = checkRatio();
   startX = (middle[0] - dimensions[0] / 2)+ dimensions[1] / 30 + dimensions[0] / 200;
   startY = (middle[1] - dimensions[1] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
+}
+
+class Lightning {
+    constructor(x, y, dir, speed, w, l) {
+        this.x = x; // as proportion of width
+        this.y = y; // as proportion of height
+        this.d = dir; // right, left, up, down
+        this.s = speed; // honestly who knows
+        this.w = w; // width, like 0.01 of screen height
+        this.l = l; // length, like 0.4 of screen width
+        this.a = 255; // alpha (out of 255)
+        this.c = color(255, 242, 94);
+        this.positions = []; // array of positions held by
+        this.xs = 0;
+        this.ys = 0;
+        if (this.d === "right") {
+            this.xs = random() * 0.1;
+            this.ys = (random() - 1) * 0.01;
+        } else if (this.d === "left") {
+            this.xs = random() * -0.1;
+            this.ys = (random() - 1) * 0.01;
+        } else if (this.d === "down") {
+            this.xs = (random() - 1) * 0.01;
+            this.ys = random() * 0.1;
+        } else if (this.d === "up") {
+            this.xs = (random() - 1) * 0.01;
+            this.ys = random() * -0.1;
+        }
+    }
+
+    animate() {
+        this.c.setAlpha(this.a);
+        stroke(this.c);
+        strokeWeight(width * this.w);
+        strokeCap(ROUND);
+        point(this.x, this.y);
+        this.x += this.xs * width / fr;
+        this.y += this.ys * height / fr;
+    }
+
+    branch() {
+
+    }
 }
