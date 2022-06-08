@@ -141,13 +141,17 @@ function runIntro() {
 }
 
 function zap() {
-    if (random() < 0.1) {
-        bolts.push(new Lightning(0, middle[1] * 1.05 + random() * height * 0.4, "right", 8, 0.005, 5));
+    if (random() < 0.01 && bolts.length < 50) {
+        bolts.push(new Lightning(0, 0.55 + (0.5 - random()) * 0.2, "right", 4, 0.005, random()));
     }
     for (let i = 0; i < bolts.length; i++) {
         if (bolts[i] != null) {
             bolts[i].animate();
-            if (bolts[i].a <= 0) bolts[i] = null;
+            if (bolts[i].a <= 0) {
+                bolts[i] = bolts[0];
+                bolts.pop();
+                i--;
+            }
         }
     }
 }
@@ -553,17 +557,18 @@ class Lightning {
         this.ys = 0;
         if (this.d === "right") {
             this.xs = random() * 0.1 * speed;
-            this.ys = (random() - 1) * 0.01;
+            this.ys = (random() - 0.5) * 0.02;
         } else if (this.d === "left") {
             this.xs = random() * -0.1 * speed;
-            this.ys = (random() - 1) * 0.01;
+            this.ys = (random() - 0.5) * 0.02;
         } else if (this.d === "down") {
-            this.xs = (random() - 1) * 0.01;
+            this.xs = (random() - 0.5) * 0.02;
             this.ys = random() * 0.1 * speed;
         } else if (this.d === "up") {
-            this.xs = (random() - 1) * 0.01;
+            this.xs = (random() - 0.5) * 0.02;
             this.ys = random() * -0.1 * speed;
         }
+        this.branches = 0;
     }
 
     animate() {
@@ -571,24 +576,31 @@ class Lightning {
         stroke(this.c);
         strokeWeight(width * this.w);
         strokeCap(ROUND);
-        point(this.x, this.y);
-        this.positions.push([this.x, this.y]);
-        this.x += this.xs * width / fr;
-        this.y += this.ys * height / fr;
-        this.a -= 160 / fr;
+        if (this.x < this.l) {
+            point(this.x, this.y);
+            this.positions.push([this.x, this.y]);
+            this.x += this.xs / fr;
+            this.y += this.ys / fr;
+        } else {
+            this.a -= 160 / fr;
+        }
         for (let i = 0; i < this.positions.length; i++) {
-            point(this.positions[i][0], this.positions[i][1]);
+            point(this.positions[i][0] * width, this.positions[i][1] * height);
         }
         if (random() < 0.02) {
             if (this.d == "right" || this.d == "left") {
-                this.ys = (random() - 1) * 0.1;
+                this.ys = (random() - 0.5) * 0.5;
             } else if (this.d == "up" || this.d == "down") {
-                this.xs = (random() - 1) * 0.1;
+                this.xs = (random() - 0.5) * 0.5;
             }
+        }
+        if (random() < 0.0001 && this.branches < 3 && bolts.length < 100) {
+            this.branch();
+            this.branches++;
         }
     }
 
     branch() {
-
+        bolts.push(new Lightning(this.x, this.y, this.d, this.s, this.w, this.l));
     }
 }
