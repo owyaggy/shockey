@@ -141,16 +141,15 @@ function runIntro() {
 }
 
 function zap() {
-    if (random() < 0.01 && bolts.length < 50) {
-        bolts.push(new Lightning(0, 0.55 + (0.5 - random()) * 0.2, "right", 4, 0.005, random()));
+    if (random() < 0.05 && bolts.length < 100) {
+        bolts.push(new Lightning(0, random(), 0.7));
     }
     for (let i = 0; i < bolts.length; i++) {
         if (bolts[i] != null) {
             bolts[i].animate();
             if (bolts[i].a <= 0) {
-                bolts[i] = bolts[0];
+                bolts[i] = bolts[bolts.length - 1];
                 bolts.pop();
-                i--;
             }
         }
     }
@@ -543,64 +542,49 @@ function windowResized() {
 }
 
 class Lightning {
-    constructor(x, y, dir, speed, w, l) {
-        this.x = x; // as proportion of width
-        this.y = y; // as proportion of height
-        this.d = dir; // right, left, up, down
-        this.s = speed; // honestly who knows
-        this.w = w; // width, like 0.01 of screen height
-        this.l = l; // length, like 0.4 of screen width
-        this.a = 255; // alpha (out of 255)
-        this.c = color(255, 242, 94);
-        this.positions = []; // array of positions held by
-        this.xs = 0;
-        this.ys = 0;
-        if (this.d === "right") {
-            this.xs = random() * 0.1 * speed;
-            this.ys = (random() - 0.5) * 0.02;
-        } else if (this.d === "left") {
-            this.xs = random() * -0.1 * speed;
-            this.ys = (random() - 0.5) * 0.02;
-        } else if (this.d === "down") {
-            this.xs = (random() - 0.5) * 0.02;
-            this.ys = random() * 0.1 * speed;
-        } else if (this.d === "up") {
-            this.xs = (random() - 0.5) * 0.02;
-            this.ys = random() * -0.1 * speed;
-        }
-        this.branches = 0;
+  constructor(sx, sy, ex) {
+    this.x = sx;
+    this.y = sy;
+    this.ex = ex;
+    this.dir = "right";
+    if (random() >= 0.5) this.dir = "left";
+    this.speed = 0.1;
+    this.turns = [[this.x, this.y]];
+    this.a = 255; // alpha (out of 255)
+    this.c = color(255, 242, 94);
+    this.vertical = random(-0.012, 0.012);
+    this.xTurns = [];
+    for (let i = 0; i < 10; i++) {
+      this.xTurns.push(random() * this.ex);
     }
+  }
 
-    animate() {
-        this.c.setAlpha(this.a);
-        stroke(this.c);
-        strokeWeight(width * this.w);
-        strokeCap(ROUND);
-        if (this.x < this.l) {
-            point(this.x, this.y);
-            this.positions.push([this.x, this.y]);
-            this.x += this.xs / fr;
-            this.y += this.ys / fr;
-        } else {
-            this.a -= 160 / fr;
+  animate() {
+    if (this.x < this.ex) {
+      this.x += this.speed;
+      this.y += this.vertical;
+      let toRemove = 0;
+      for (let i = 0; i < this.xTurns.length; i++) {
+        if (this.x > this.xTurns[i]) {
+          toRemove = i;
+          this.turns.push([this.x, this.y]);
+          this.vertical = 0 - (this.vertical + (random() + 0.8) * 0.04);
         }
-        for (let i = 0; i < this.positions.length; i++) {
-            point(this.positions[i][0] * width, this.positions[i][1] * height);
-        }
-        if (random() < 0.02) {
-            if (this.d == "right" || this.d == "left") {
-                this.ys = (random() - 0.5) * 0.5;
-            } else if (this.d == "up" || this.d == "down") {
-                this.xs = (random() - 0.5) * 0.5;
-            }
-        }
-        if (random() < 0.0001 && this.branches < 3 && bolts.length < 100) {
-            this.branch();
-            this.branches++;
-        }
+      }
+      this.xTurns[toRemove] = this.xTurns[this.xTurns.length - 1];
+      this.xTurns.pop();
+    } else {
+      this.a -= 240 / fr;
+      this.c.setAlpha(this.a);
     }
-
-    branch() {
-        bolts.push(new Lightning(this.x, this.y, this.d, this.s, this.w, this.l));
+    stroke(this.c);
+    strokeWeight(height * 0.008);
+    noFill();
+    beginShape();
+    for (let i = 0; i < this.turns.length; i++) {
+      vertex(this.turns[i][0] * width, this.turns[i][1] * height);
     }
+    vertex(this.x * width, this.y * height);
+    endShape();
+  }
 }
