@@ -100,12 +100,39 @@ function draw() {
 
         drawMenu();
     }
+  
+    if (state == 'goal'){
+       drawScoreboard(); // draws scoreboard at top of screen
+       drawInfo(); // draws info at bottom of screen
+       drawRink();
+       drawGoals();
+       runGoal();
+      
+    }
 }
+
+function mouseClicked(){
+  
+  if (state === 'goal' || state === 'start'){
+    state = 'play'
+  }
+  
+}
+
 
 function updateBackground() {
     background(0, 0, animationMetrics.bg);
 }
 
+function runGoal(){
+  textSize(32);
+  text('GOAL', 0, 0);
+  textAlign(CENTER);
+  textStyle(BOLDITALIC);
+ 
+  
+  
+}
 function runIntro() {
     textSize(dimensions[1] * animationMetrics["y"] / 1000);
     textAlign(CENTER);
@@ -170,7 +197,7 @@ function drawScoreboard() {
     textStyle(BOLD);
     textSize(36);
     textAlign(CENTER);
-    text(score[0], middle[0] * 0.8, 37);
+    text(score[0], middle[0] *  0.8, 37);
     text(score[1], middle[0] * 1.2, 37);
 }
 
@@ -515,7 +542,10 @@ function drawArrows() {
     }
 }
 
+
+
 function goal(scorer) {
+    state = 'goal'
     if (scorer === "user") {
         score[0]++;
     }
