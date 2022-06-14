@@ -525,19 +525,38 @@ function drawCPU() {
 function drawArrows() {
     let xinterval = dimensions[0] / 12;
     let yinterval = dimensions[1] / 8;
-    let userForce;
-    let distance;
     stroke(255);
     strokeWeight(dimensions[0] / 75);
     for (let x = 1; x < 12; x++) {
         for (let y = 1; y < 8; y++) {
+            
             let a = x * xinterval + middle[0] - dimensions[0] / 2;
             let b = y * yinterval + middle[1] - dimensions[1] / 2
-            point(a, b);
-            /* TODO: Draw the actual arrows
-            distance =
-            userForce = coulombConstant * striker["q"] / distance;
-            //line(a, b, )*/
+
+            let userDist = Math.sqrt(
+            Math.pow(a - striker["x"], 2) + Math.pow(b - striker["y"], 2)
+            );
+           log(userDist);
+            let userForce = Math.abs(
+                coulombConstant * puck["q"] * striker["q"] / Math.pow(userDist, 2)// force in N of user striker charge on point charge
+                );
+            let cpuDistance = Math.sqrt( 
+                Math.pow(a - cpu["x"], 2) + Math.pow(b - cpu["y"], 2)
+            );
+            let cpuForce = coulombConstant * puck["q"] * cpu["q"] / Math.pow(cpuDistance, 2);// force in N of CPU striker on puck charge
+            let userAngle = calculateAngle(striker["x"], striker["y"], a, b);
+           
+            if (striker["q"] > 0) userAngle += Math.PI;
+           
+            let cpuAngle = calculateAngle(cpu["x"], cpu["y"], a, b); 
+            let resultant = vectorAddition(userForce, userAngle, cpuForce, cpuAngle); // in form [magnitude, angle]
+            //TODO: Draw the actual arrows
+
+            log(resultant)
+            
+            strokeWeight(2);
+            line(a, b, a + resultant[0]* Math.cos(resultant[1]* 6000), b + resultant[0]*Math.sin(resultant[1])*6000 )
+           // line(a, b, a + (resultant * Math.cos(cpuAngle)), b + (resultant * Math.sin(cpuAngle)));
         }
     }
 }
