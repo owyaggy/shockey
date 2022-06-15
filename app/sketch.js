@@ -520,6 +520,11 @@ function updatePuck() {
         puck['x'] = 17.5 / 2;
         puck['y'] = 5;
     }
+    noStroke();
+    fill(0);
+    textSize(20);
+    textAlign(CENTER);
+    text("Force on puck: " + Math.round(resultant[0]) + " N", middle[0], height - 15);
 }
 
 function calculateAngle(x1, y1, x2, y2) {
