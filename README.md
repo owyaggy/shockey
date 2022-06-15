@@ -1,7 +1,5 @@
 # Shockey
 Aaron Contreras, Owen Yaggy
-SoftDev <br>
-P04: Le Fin <br>
 
 ## Description
 Shockey resembles a game of air hockey, but all movement is based on electric fields and Coulomb’s law. Instead of “strikers” used to hit the puck, both the user and the computer-controlled opponent will move charged objects around the arena. The puck itself will be a negatively charged particle, meaning the user and the CPU can both attempt to position themselves in an attempt to move the puck in each other’s goal. The user has one added bonus, though: they can flip their charge so they become a positive object, now able to attract the puck instead of repel it. The object of the game is to get the puck into the opponent’s goal (1 point). The user can “free play” (play with no restraints), play “first to 5,” or “1 minute timed round.” The difficulty of the CPU can be adjusted, as can a number of other settings.
