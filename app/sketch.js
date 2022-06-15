@@ -19,7 +19,9 @@ let score; // [user goals, cpu goals]
 let state; // 'start', 'about', 'how-to', 'mode', 'play'
 let animationMetrics; // variables to track intro animation
 let bolts; // array of lightning objects
-let lightningToggle = true;
+let lightningToggle;
+let gameMode;
+let waiting;
 
 /**
  * Notes:
@@ -56,9 +58,11 @@ function setup() {
         "y": 10 / 2,
         "xv": 0,
         "yv": 3,
-        "q": universalQ, // TODO: accurate charge
-        "difficulty": 1 // TODO: implement difficulty
+        "q": universalQ,
+        "difficulty": 1,
+        "speed": 100
     }
+    cpu.speed /= cpu.difficulty;
     goalHeight = 0.4;
     dimensions = checkRatio();
     startX = (middle[0] - dimensions[0] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
@@ -69,7 +73,7 @@ function setup() {
     fk = .08; // kinetic friction µ
     pauseGame = false;
     coulombConstant = 9 * Math.pow(10, 9);
-    wallBounce = 1;
+    wallBounce = 0.5;
     score = [0, 0];
     state = 'start';
     animationMetrics = {
@@ -79,6 +83,9 @@ function setup() {
         "bg": 255
     }
     bolts = [];
+    lightningToggle = true;
+    gameMode = "freeplay";
+    waiting = false;
 }
 
 function draw() {
@@ -113,6 +120,14 @@ function draw() {
 
     if (state == "about") {
         drawAbout();
+    }
+
+    if (state == "howto") {
+        drawHowTo();
+    }
+
+    if (state == "pickMode") {
+        pickMode();
     }
 }
 
@@ -216,6 +231,7 @@ function drawButtons() {
             }
             if (mouseX > middle[0] - width * 0.075 && mouseX < middle[0] + width * 0.075) {
                 state = "pickMode";
+                waiting = true;
             }
             if (mouseX > middle[0] * 1.4 - width * 0.075 && mouseX < middle[0] * 1.4 + width * 0.075) {
                 state = "howto";
@@ -377,6 +393,7 @@ function updatePuck() {
     let userDistance = Math.sqrt(
         Math.pow(puck["x"] - striker["x"], 2) + Math.pow(puck["y"] - striker["y"], 2)
     );
+    if (userDistance < 1) userDistance = 1; // artificial limitation to prevent insane computations based on near-zero distances
     let userForce; // force in N of user striker charge on puck charge
     userForce = Math.abs(coulombConstant * puck["q"] * striker["q"] / Math.pow(userDistance, 2));
     let cpuDistance = Math.sqrt(
@@ -549,8 +566,21 @@ function drawCPU() {
     let x = (cpu["x"] / 17.5) * dimensions[0] + (width - dimensions[0]) / 2;
     let y = (cpu["y"] / 10) * dimensions[1] + (height - dimensions[1]) / 2;
     // simple movement simulation
+    /**
     if (y >= middle[1] + dimensions[1] * 0.3) cpu["yv"] *= -1;
     if (y <= middle[1] - dimensions[1] * 0.3) cpu["yv"] *= -1;
+     */
+    let idealX = middle[0] + dimensions[0] / 2;
+    let idealY = middle[1];
+    idealX += (puck["x"] / 17.5) * dimensions[0] + (width - dimensions[0]) / 2;
+    idealX /= 2;
+    idealY += (puck["y"] / 10) * dimensions[1] + (height - dimensions[1] / 2);
+    idealY /= 2;
+    if (x < idealX) cpu["xv"] = Math.abs(idealX - x) / cpu["speed"];
+    else cpu["xv"] = -1 * Math.abs(idealX - x) / cpu["speed"];
+
+    if (y < idealY) cpu["yv"] = Math.abs(idealY - y) / cpu["speed"];
+    else cpu["yv"] + -1 * Math.abs(idealY - y) / cpu["speed"];
     // end simple movement simulation
     if (x < startX) x = startX;
     if (x > width - startX) x = width - startX;
@@ -606,13 +636,18 @@ function drawArrows() {
 
 
 function goal(scorer) {
-    state = 'goal'
+    // (x - (width - dimensions[0]) / 2) / dimensions[0] * 17.5
     if (scorer === "user") {
         score[0]++;
     }
     if (scorer === "cpu") {
         score[1]++;
     }
+    puck["x"] = 17.5 / 2;
+    puck['y'] = 5;
+    puck["xv"] = 0;
+    puck["yv"] = 0;
+    puck
 }
 
 function drawMenu() {
@@ -721,9 +756,94 @@ function drawAbout() {
 
             if (mouseX > middle[0] - width * 0.075 && mouseX < middle[0] + width * 0.075) {
                 state = "pickMode";
+                waiting = true;
             }
             if (mouseX > middle[0] * 1.4 - width * 0.075 && mouseX < middle[0] * 1.4 + width * 0.075) {
                 state = "howto";
+            }
+        }
+    }
+}
+
+function drawHowTo() {
+    textWrap(WORD);
+    textAlign(CENTER);
+    textSize(height * 0.04);
+    strokeWeight(height * 0.002);
+    let aboutText = "IMPORTANT: While the game will work in any window size, it's designed to work best if you maximize " +
+        "your window. \nTo score, move your striker using the mouse to repel the puck into the goal. \nPress space to invert " +
+        "the charge on your striker. \nPress p to pause and unpause. \nPress g to see a grid of arrows displaying force " +
+        "from the strikers. \nPress h to see an arrow displaying net force direction from the strikers. \nGame modes:\n" +
+        "Freeplay: infinite play; 1st to 5: 1st to 5 wins; Timed: game ends after 1 minute.";
+    text(aboutText, middle[0], 25, width - 50);
+    textAlign(CENTER);
+    textStyle(BOLDITALIC);
+    fill(animationMetrics["alpha"], 150, 255 - animationMetrics['alpha'] + 40);
+    strokeWeight(dimensions[1] / 200);
+    stroke(255, 255, 255);
+    strokeCap(ROUND);
+    rectMode(CENTER);
+    let rectHeight = 100;
+    if (height < 300) rectHeight = 50;
+    rect(middle[0], middle[1] * 1.3, width * 0.15, rectHeight);
+    rect(middle[0] * 0.6, middle[1] * 1.3, width * 0.15, rectHeight);
+    textSize(rectHeight / 2);
+    fill(255);
+    noStroke();
+    textStyle(NORMAL);
+    text("Play", middle[0], middle[1] * 1.33);
+    text("About", middle[0] * 0.6, middle[1] * 1.33);
+    if (mouseIsPressed) {
+        if (mouseY < middle[1] * 1.3 + rectHeight / 2 && mouseY > middle[1] * 1.3 - rectHeight / 2) {
+
+            if (mouseX > middle[0] - width * 0.075 && mouseX < middle[0] + width * 0.075) {
+                state = "pickMode";
+                waiting = true;
+            }
+            if (mouseX > middle[0] * 0.6 - width * 0.075 && mouseX < middle[0] * 0.6 + width * 0.075) {
+                state = "about";
+            }
+        }
+    }
+}
+
+function pickMode() {
+    textAlign(CENTER);
+    textStyle(BOLDITALIC);
+    fill(animationMetrics["alpha"], 150, 255 - animationMetrics['alpha'] + 40);
+    strokeWeight(dimensions[1] / 200);
+    stroke(255, 255, 255);
+    strokeCap(ROUND);
+    rectMode(CENTER);
+    let rectHeight = 100;
+    if (height < 300) rectHeight = 50;
+    rect(middle[0], middle[1] * 1.0, width * 0.15, rectHeight);
+    rect(middle[0] * 0.6, middle[1] * 1.0, width * 0.15, rectHeight);
+    rect(middle[0] * 1.4, middle[1] * 1.0, width * 0.15, rectHeight);
+    textSize(rectHeight / 2);
+    fill(255);
+    noStroke();
+    textStyle(NORMAL);
+    text("Freeplay", middle[0] * 0.6, middle[1] * 1.03);
+    text("1st to 5", middle[0], middle[1] * 1.03);
+    text("Timed", middle[0] * 1.4, middle[1] * 1.03);
+    if (!mouseIsPressed) waiting = false;
+    if (mouseIsPressed && waiting == false) {
+        if (mouseY < middle[1] * 1.0 + rectHeight / 2 && mouseY > middle[1] * 1.0 - rectHeight / 2) {
+            if (mouseX > middle[0] * 0.6 - width * 0.075 && mouseX < middle[0] * 0.6 + width * 0.075) {
+                gameMode = "freeplay";
+                state = "play";
+                animationMetrics.bg = 255;
+            }
+            if (mouseX > middle[0] - width * 0.075 && mouseX < middle[0] + width * 0.075) {
+                gameMode = "five";
+                state = "play";
+                animationMetrics.bg = 255;
+            }
+            if (mouseX > middle[0] * 1.4 - width * 0.075 && mouseX < middle[0] * 1.4 + width * 0.075) {
+                gameMode = "timed";
+                state = "play";
+                animationMetrics.bg = 255;
             }
         }
     }
