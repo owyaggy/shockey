@@ -60,7 +60,7 @@ function setup() {
         "yv": 3,
         "q": universalQ,
         "difficulty": 1,
-        "speed": 100
+        "speed": 500
     }
     cpu.speed /= cpu.difficulty;
     goalHeight = 0.4;
@@ -108,15 +108,15 @@ function draw() {
 
         drawMenu();
     }
-  // TODO to fix
+  /** TODO to fix
     if (state == 'goal'){
        drawScoreboard(); // draws scoreboard at top of screen
        drawInfo(); // draws info at bottom of screen
        drawRink();
        drawGoals();
        runGoal();
-      
-    }
+
+    }*/
 
     if (state == "about") {
         drawAbout();
@@ -443,16 +443,20 @@ function updatePuck() {
     if (x < startX) {
         if (y > middle[1] - dimensions[1] * goalHeight / 2 && y < middle[1] + dimensions[1] * goalHeight /2) {
             goal('cpu');
+            x = middle[0];
+        } else {
+            x = startX;
+            puck["xv"] *= -wallBounce;
         }
-        x = startX;
-        puck["xv"] *= -wallBounce;
     }
     if (x > width - startX) {
         if (y > middle[1] - dimensions[1] * goalHeight / 2 && y < middle[1] + dimensions[1] * goalHeight /2) {
             goal('user');
+            x = middle[0];
+        } else {
+            x = width - startX;
+            puck["xv"] *= -wallBounce;
         }
-        x = width - startX;
-        puck["xv"] *= -wallBounce;
     }
     if (y < startY) {
         y = startY;
@@ -647,7 +651,12 @@ function goal(scorer) {
     puck['y'] = 5;
     puck["xv"] = 0;
     puck["yv"] = 0;
-    puck
+    striker["x"] = 4;
+    striker['y'] = 5;
+    cpu['x'] = 17.5 - 4;
+    cpu['y'] = 5;
+    cpu['xv'] = 0;
+    cpu['yv'] = 0;
 }
 
 function drawMenu() {
