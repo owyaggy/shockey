@@ -8,3 +8,4 @@ To increase the utility of this game as a physics simulator, the bottom of the s
 link to project:https://editor.p5js.org/aacontreras20/sketches/ghPKeSgaN
 *project works for all aspect ratios, but maximize playing space for enhanced user experience
 
+Alternatively, the app directory can be downloaded and the index.html file can be opened to run the project as a standalone in your browser, independently of the p5.js online editor.
