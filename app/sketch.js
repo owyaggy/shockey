@@ -22,7 +22,7 @@ let bolts; // array of lightning objects
 let lightningToggle;
 let gameMode;
 let waiting;
-let slider;
+let timer;
 
 /**
  * Notes:
@@ -87,6 +87,7 @@ function setup() {
     lightningToggle = true;
     gameMode = "freeplay";
     waiting = false;
+    timer = 0;
 }
 
 function draw() {
@@ -108,6 +109,14 @@ function draw() {
         drawCPU();
 
         drawMenu();
+        if (gameMode == "timed") {
+            timer--;
+            if (timer == 0) {
+                if (score[0] > score[1]) state = "userWins";
+                if (score[1] > score[0]) state = "cpuWins";
+                else state = "tie";
+            }
+        }
     }
   /** TODO to fix
     if (state == 'goal'){
@@ -129,6 +138,30 @@ function draw() {
 
     if (state == "pickMode") {
         pickMode();
+    }
+
+    if (state == "userWins") {
+        noStroke();
+        fill(255);
+        textAlign(CENTER);
+        textSize(50);
+        text("You win!", middle[0], middle[1]);
+    }
+
+    if (state == "cpuWins") {
+        noStroke();
+        fill(255);
+        textAlign(CENTER);
+        textSize(50);
+        text("You lose!", middle[0], middle[1]);
+    }
+
+    if (state == "tie") {
+        noStroke();
+        fill(255);
+        textAlign(CENTER);
+        textSize(50);
+        text("You tied!", middle[0], middle[1]);
     }
 }
 
@@ -471,7 +504,7 @@ function updatePuck() {
     puck["x"] = (x - (width - dimensions[0]) / 2) / dimensions[0] * 17.5;
     puck["y"] = (y - (height - dimensions[1]) / 2) / dimensions[1] * 10.0;
     if (pauseGame) {
-        console.log(
+        /**console.log(
             "userDistance: ", userDistance,
             " userForce: ", userForce,
             " userAngle: ", userAngle / Math.PI, "π",
@@ -481,7 +514,11 @@ function updatePuck() {
             " resultant magnitude w/o friction: ", resultant[0] + frictionForce,
             " resultant magnitude w/ friction: ", resultant[0],
             " resultant angle: ", resultant[1] / Math.PI, "π"
-        );
+        );*/
+    }
+    if (puck['x'] < 0 || puck['x'] > 17.5 || puck['y'] < 0 || puck['y'] > 10) {
+        puck['x'] = 17.5 / 2;
+        puck['y'] = 5;
     }
 }
 
@@ -659,6 +696,14 @@ function goal(scorer) {
     cpu['y'] = 5;
     cpu['xv'] = 0;
     cpu['yv'] = 0;
+    if (gameMode == "five") {
+        if (score[0] >= 5) {
+            state = "userWins";
+        }
+        if (score[1] >= 5) {
+            state = "cpuWins";
+        }
+    }
 }
 
 function drawMenu() {
@@ -868,6 +913,7 @@ function pickMode() {
                 state = "play";
                 animationMetrics.bg = 255;
                 cpu.speed = cpu.difficulty;
+                timer = fr * 60;
             }
         }
         // sense slider
