@@ -22,6 +22,7 @@ let bolts; // array of lightning objects
 let lightningToggle;
 let gameMode;
 let waiting;
+let slider;
 
 /**
  * Notes:
@@ -62,7 +63,7 @@ function setup() {
         "difficulty": 1,
         "speed": 1
     }
-    cpu.speed *= cpu.difficulty;
+    cpu.speed = cpu.difficulty;
     goalHeight = 0.4;
     dimensions = checkRatio();
     startX = (middle[0] - dimensions[0] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
@@ -587,7 +588,7 @@ function drawCPU() {
     if (y < idealY) cpu["yv"] = Math.abs(idealY - y) / cpu["speed"];
     else cpu["yv"] + -1 * Math.abs(idealY - y) / cpu["speed"];*/
     // end simple movement simulation
-    if (x < startX) x = startX;
+    if (x < middle[0]) x = middle[0];
     if (x > width - startX) x = width - startX;
     if (y < startY) y = startY;
     if (y > height - startY) y = height - startY;
@@ -837,6 +838,16 @@ function pickMode() {
     text("Freeplay", middle[0] * 0.6, middle[1] * 1.03);
     text("1st to 5", middle[0], middle[1] * 1.03);
     text("Timed", middle[0] * 1.4, middle[1] * 1.03);
+    text("Difficulty (1-10)", middle[0], height * 0.82);
+    textSize(rectHeight / 6);
+    text("Mouse must be on slider line to drag slider", middle[0], height * 0.9);
+    // slider for difficulty
+    rectMode(CENTER);
+    rect(middle[0], height * 0.7, width * 0.5, 10);
+    fill(animationMetrics["alpha"], 150, 255 - animationMetrics['alpha'] + 40);
+    stroke(255);
+    ellipse(width * 0.05 * cpu['difficulty'] + width * 0.25, height * 0.7, height * 0.05);
+    // end slider for difficulty
     if (!mouseIsPressed) waiting = false;
     if (mouseIsPressed && waiting == false) {
         if (mouseY < middle[1] * 1.0 + rectHeight / 2 && mouseY > middle[1] * 1.0 - rectHeight / 2) {
@@ -844,16 +855,27 @@ function pickMode() {
                 gameMode = "freeplay";
                 state = "play";
                 animationMetrics.bg = 255;
+                cpu.speed = cpu.difficulty;
             }
             if (mouseX > middle[0] - width * 0.075 && mouseX < middle[0] + width * 0.075) {
                 gameMode = "five";
                 state = "play";
                 animationMetrics.bg = 255;
+                cpu.speed = cpu.difficulty;
             }
             if (mouseX > middle[0] * 1.4 - width * 0.075 && mouseX < middle[0] * 1.4 + width * 0.075) {
                 gameMode = "timed";
                 state = "play";
                 animationMetrics.bg = 255;
+                cpu.speed = cpu.difficulty;
+            }
+        }
+        // sense slider
+        if (mouseY < height * 0.7 + height * 0.025 && mouseY > height * 0.7 - height * 0.025) {
+            if (mouseX > width * 0.25 && mouseX < width * 0.75) {
+                cpu['difficulty'] = (mouseX - width * 0.25) / (width * 0.5) * 10;
+                cpu['difficulty'] = Math.round(cpu['difficulty']);
+                if (cpu['difficulty'] < 1) cpu['difficulty'] = 1;
             }
         }
     }
