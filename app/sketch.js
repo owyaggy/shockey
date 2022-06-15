@@ -921,7 +921,13 @@ function drawArrows() {
 
             let v0 = createVector(a, b);
             let v1 = createVector(resultant[0] * dimensions[0] * 0.0005, 0);
-            angle = resultant[1];
+            angle = Math.PI * 2 - resultant[1];
+            if (angle >= Math.PI && angle <= Math.PI * 3 / 2) {
+                angle -= Math.PI;
+                angle = Math.PI * 3 / 2 - angle;
+            } else if (angle >= 0 && angle <= Math.PI * 0.5) {
+                angle = Math.PI * 0.5 - angle;
+            }
             drawArrow(v0, v1.rotate(angle));
 
 /**
