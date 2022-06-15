@@ -60,9 +60,9 @@ function setup() {
         "yv": 3,
         "q": universalQ,
         "difficulty": 1,
-        "speed": 500
+        "speed": 1
     }
-    cpu.speed /= cpu.difficulty;
+    cpu.speed *= cpu.difficulty;
     goalHeight = 0.4;
     dimensions = checkRatio();
     startX = (middle[0] - dimensions[0] / 2) + dimensions[1] / 30 + dimensions[0] / 200;
@@ -399,6 +399,7 @@ function updatePuck() {
     let cpuDistance = Math.sqrt(
         Math.pow(puck["x"] - cpu["x"], 2) + Math.pow(puck["y"] - cpu["y"], 2)
     );
+    if (cpuDistance < 1) cpuDistance = 1;
     let cpuForce; // force in N of CPU striker on puck charge
     cpuForce = coulombConstant * puck["q"] * cpu["q"] / Math.pow(cpuDistance, 2);
     let userAngle = calculateAngle(striker["x"], striker["y"], puck["x"], puck["y"]);
@@ -574,17 +575,17 @@ function drawCPU() {
     if (y >= middle[1] + dimensions[1] * 0.3) cpu["yv"] *= -1;
     if (y <= middle[1] - dimensions[1] * 0.3) cpu["yv"] *= -1;
      */
-    let idealX = middle[0] + dimensions[0] / 2;
-    let idealY = middle[1];
-    idealX += (puck["x"] / 17.5) * dimensions[0] + (width - dimensions[0]) / 2;
-    idealX /= 2;
-    idealY += (puck["y"] / 10) * dimensions[1] + (height - dimensions[1] / 2);
-    idealY /= 2;
+    if (cpu['x'] < puck['x']) cpu["xv"] = cpu["speed"];
+    else cpu['xv'] = -1 * cpu['speed'];
+    if (cpu['y'] < puck['y']) cpu['yv'] = cpu['speed'];
+    else cpu['yv'] = -1 * cpu['speed'];
+    /**let idealX = middle[0] + dimensions[0] / 2 + ((puck["x"] / 17.5) * dimensions[0] + (width - dimensions[0]) / 2) / 2;
+    let idealY = middle[1] + ((puck["y"] / 10) * dimensions[1] + (height - dimensions[1]) / 2) / 2;
     if (x < idealX) cpu["xv"] = Math.abs(idealX - x) / cpu["speed"];
     else cpu["xv"] = -1 * Math.abs(idealX - x) / cpu["speed"];
 
     if (y < idealY) cpu["yv"] = Math.abs(idealY - y) / cpu["speed"];
-    else cpu["yv"] + -1 * Math.abs(idealY - y) / cpu["speed"];
+    else cpu["yv"] + -1 * Math.abs(idealY - y) / cpu["speed"];*/
     // end simple movement simulation
     if (x < startX) x = startX;
     if (x > width - startX) x = width - startX;
