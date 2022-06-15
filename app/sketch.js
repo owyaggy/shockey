@@ -625,7 +625,7 @@ function drawCPU() {
     if (y < idealY) cpu["yv"] = Math.abs(idealY - y) / cpu["speed"];
     else cpu["yv"] + -1 * Math.abs(idealY - y) / cpu["speed"];*/
     // end simple movement simulation
-    if (x < middle[0]) x = middle[0];
+    if (x <= middle[0]) x = middle[0];
     if (x > width - startX) x = width - startX;
     if (y < startY) y = startY;
     if (y > height - startY) y = height - startY;
@@ -636,47 +636,6 @@ function drawCPU() {
     rectMode(CENTER);
     rect(x, y, dimensions[1] / 22, dimensions[1] / 90, 10);
 }
-
-function drawArrows() {
-    let xinterval = dimensions[0] / 12;
-    let yinterval = dimensions[1] / 8;
-    stroke(255);
-    strokeWeight(dimensions[0] / 75);
-    for (let x = 1; x < 12; x++) {
-        for (let y = 1; y < 8; y++) {
-            
-            let a = x * xinterval + middle[0] - dimensions[0] / 2;
-            let b = y * yinterval + middle[1] - dimensions[1] / 2
-
-            let userDist = Math.sqrt(
-            Math.pow(a - striker["x"], 2) + Math.pow(b - striker["y"], 2)
-            );
-           log(userDist);
-            let userForce = Math.abs(
-                coulombConstant * puck["q"] * striker["q"] / Math.pow(userDist, 2)// force in N of user striker charge on point charge
-                );
-            let cpuDistance = Math.sqrt( 
-                Math.pow(a - cpu["x"], 2) + Math.pow(b - cpu["y"], 2)
-            );
-            let cpuForce = coulombConstant * puck["q"] * cpu["q"] / Math.pow(cpuDistance, 2);// force in N of CPU striker on puck charge
-            let userAngle = calculateAngle(striker["x"], striker["y"], a, b);
-           
-            if (striker["q"] > 0) userAngle += Math.PI;
-           
-            let cpuAngle = calculateAngle(cpu["x"], cpu["y"], a, b); 
-            let resultant = vectorAddition(userForce, userAngle, cpuForce, cpuAngle); // in form [magnitude, angle]
-            //TODO: Draw the actual arrows
-
-            log(resultant)
-            
-            strokeWeight(2);
-            line(a, b, a + resultant[0]* Math.cos(resultant[1]* 6000), b + resultant[0]*Math.sin(resultant[1])*6000 )
-           // line(a, b, a + (resultant * Math.cos(cpuAngle)), b + (resultant * Math.sin(cpuAngle)));
-        }
-    }
-}
-
-
 
 function goal(scorer) {
     // (x - (width - dimensions[0]) / 2) / dimensions[0] * 17.5
@@ -713,6 +672,7 @@ function drawMenu() {
 function keyPressed() {
     if (keyCode == 32) striker["q"] *= -1;
     if (keyCode == 80) pauseGame = !pauseGame;
+    if (keyCode == 71) arrows = !arrows;
 }
 
 function windowResized() {
@@ -829,7 +789,7 @@ function drawHowTo() {
     let aboutText = "IMPORTANT: While the game will work in any window size, it's designed to work best if you maximize " +
         "your window. \nTo score, move your striker using the mouse to repel the puck into the goal. \nPress space to invert " +
         "the charge on your striker. \nPress p to pause and unpause. \nPress g to see a grid of arrows displaying force " +
-        "from the strikers. \nPress h to see an arrow displaying net force direction from the strikers. \nGame modes:\n" +
+        "from the strikers. \nGame modes:\n" +
         "Freeplay: infinite play; 1st to 5: 1st to 5 wins; Timed: game ends after 1 minute.";
     text(aboutText, middle[0], 25, width - 50);
     textAlign(CENTER);
@@ -925,4 +885,86 @@ function pickMode() {
             }
         }
     }
+}
+
+function drawArrows() {
+    let xinterval = dimensions[0] / 12;
+    let yinterval = dimensions[1] / 8;
+    stroke(255);
+    strokeWeight(dimensions[0] / 75);
+    for (let x = 1; x < 12; x++) {
+        for (let y = 1; y < 8; y++) {
+
+            let a = x * xinterval + middle[0] - dimensions[0] / 2;
+            let b = y * yinterval + middle[1] - dimensions[1] / 2;
+            strokeWeight(height * 0.015);
+            point(a, b);
+            let myX = (a - (width - dimensions[0]) / 2) / dimensions[0] * 17.5; // TODO: convert
+            let myY = (b - (height - dimensions[1]) / 2) / dimensions[1] * 10;
+
+            let userDistance = Math.sqrt(
+        Math.pow(myX - striker["x"], 2) + Math.pow(myY - striker["y"], 2)
+    );
+    if (userDistance < 1) userDistance = 1; // artificial limitation to prevent insane computations based on near-zero distances
+    let userForce; // force in N of user striker charge on puck charge
+    userForce = Math.abs(coulombConstant * puck["q"] * striker["q"] / Math.pow(userDistance, 2));
+    let cpuDistance = Math.sqrt(
+        Math.pow(myX - cpu["x"], 2) + Math.pow(myY - cpu["y"], 2)
+    );
+    if (cpuDistance < 1) cpuDistance = 1;
+    let cpuForce; // force in N of CPU striker on puck charge
+    cpuForce = coulombConstant * puck["q"] * cpu["q"] / Math.pow(cpuDistance, 2);
+    let userAngle = calculateAngle(striker["x"], striker["y"], myX, myY);
+    if (striker["q"] > 0) userAngle += Math.PI;
+    let cpuAngle = calculateAngle(cpu["x"], cpu["y"], myX, myY);
+    let resultant = vectorAddition(userForce, userAngle, cpuForce, cpuAngle); // in form [magnitude, angle]
+
+            let v0 = createVector(a, b);
+            let v1 = createVector(resultant[0] * dimensions[0] * 0.0005, 0);
+            angle = resultant[1];
+            drawArrow(v0, v1.rotate(angle));
+
+/**
+            let userDist = Math.sqrt(
+            Math.pow(a - striker["x"], 2) + Math.pow(b - striker["y"], 2)
+            );
+           log(userDist);
+            let userForce = Math.abs(
+                coulombConstant * puck["q"] * striker["q"] / Math.pow(userDist, 2)// force in N of user striker charge on point charge
+                );
+            let cpuDistance = Math.sqrt(
+                Math.pow(a - cpu["x"], 2) + Math.pow(b - cpu["y"], 2)
+            );
+            let cpuForce = coulombConstant * puck["q"] * cpu["q"] / Math.pow(cpuDistance, 2);// force in N of CPU striker on puck charge
+            let userAngle = calculateAngle(striker["x"], striker["y"], a, b);
+
+            if (striker["q"] > 0) userAngle += Math.PI;
+
+            let cpuAngle = calculateAngle(cpu["x"], cpu["y"], a, b);
+            let resultant = vectorAddition(userForce, userAngle, cpuForce, cpuAngle); // in form [magnitude, angle]**/
+            //TODO: Draw the actual arrows
+
+            //log(resultant)
+
+            //strokeWeight(2);
+            //line(a, b, a + resultant[0]* Math.cos(resultant[1]* 6000), b + resultant[0]*Math.sin(resultant[1])*6000 )
+           // line(a, b, a + (resultant * Math.cos(cpuAngle)), b + (resultant * Math.sin(cpuAngle)));
+        }
+    }
+}
+
+
+// draw an arrow for a vector at a given base position
+function drawArrow(base, vec) {
+    push();
+    stroke(255);
+    strokeWeight(3);
+    fill(255);
+    translate(base.x, base.y);
+    line(0, 0, vec.x, vec.y);
+    rotate(vec.heading());
+    let arrowSize = 7;
+    translate(vec.mag() - arrowSize, 0);
+    triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
+    pop();
 }
