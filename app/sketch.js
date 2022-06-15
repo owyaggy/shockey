@@ -19,6 +19,7 @@ let score; // [user goals, cpu goals]
 let state; // 'start', 'about', 'how-to', 'mode', 'play'
 let animationMetrics; // variables to track intro animation
 let bolts; // array of lightning objects
+let lightningToggle = true;
 
 /**
  * Notes:
@@ -100,7 +101,7 @@ function draw() {
 
         drawMenu();
     }
-  
+  // TODO to fix
     if (state == 'goal'){
        drawScoreboard(); // draws scoreboard at top of screen
        drawInfo(); // draws info at bottom of screen
@@ -109,15 +110,19 @@ function draw() {
        runGoal();
       
     }
+
+    if (state == "about") {
+        drawAbout();
+    }
 }
 
-function mouseClicked(){
+/*function mouseClicked(){
   
   if (state === 'goal' || state === 'start'){
     state = 'play'
   }
   
-}
+}*/
 
 
 function updateBackground() {
@@ -134,14 +139,6 @@ function runGoal(){
   
 }
 function runIntro() {
-    textSize(dimensions[1] * animationMetrics["y"] / 1000);
-    textAlign(CENTER);
-    textStyle(BOLDITALIC);
-    fill(animationMetrics["alpha"], 150, 255 - animationMetrics['alpha'] + 40, animationMetrics['alpha'] * 0.7);
-    strokeWeight(dimensions[1] / 200);
-    stroke(255, 255, 255, animationMetrics['alpha']);
-    strokeCap(ROUND);
-    text(animationMetrics["text"], middle[0], animationMetrics["y"] / 100 * middle[1]);
     if (animationMetrics['y'] >= 100) {
         animationMetrics['y'] = 100;
         textSize(dimensions[1] * animationMetrics["y"] / 2500);
@@ -150,7 +147,8 @@ function runIntro() {
             animationMetrics.bg -= 75 / fr;
         } else {
             animationMetrics.bg = 40;
-            zap();
+            if (lightningToggle) zap();
+            drawButtons();
         }
     }
     if (animationMetrics['y'] < 100) {
@@ -158,6 +156,14 @@ function runIntro() {
         animationMetrics['alpha']+= 72 / fr;
         animationMetrics["text"] = animationMetrics['text'].substring(1, 7) + animationMetrics['text'].substring(0, 1);
     }
+    textSize(dimensions[1] * animationMetrics["y"] / 1000);
+    textAlign(CENTER);
+    textStyle(BOLDITALIC);
+    fill(animationMetrics["alpha"], 150, 255 - animationMetrics['alpha'] + 40, animationMetrics['alpha'] * 0.7);
+    strokeWeight(dimensions[1] / 200);
+    stroke(255, 255, 255, animationMetrics['alpha']);
+    strokeCap(ROUND);
+    text(animationMetrics["text"], middle[0], animationMetrics["y"] / 100 * middle[1]);
     strokeWeight(dimensions[1] / 100);
     stroke(255, 255, 255, animationMetrics["alpha"] * 0.9);
     strokeCap(PROJECT);
@@ -177,6 +183,42 @@ function zap() {
             if (bolts[i].a <= 0) {
                 bolts[i] = bolts[bolts.length - 1];
                 bolts.pop();
+            }
+        }
+    }
+}
+
+function drawButtons() {
+    // buttons: about, play, how to play
+    textAlign(CENTER);
+    textStyle(BOLDITALIC);
+    fill(animationMetrics["alpha"], 150, 255 - animationMetrics['alpha'] + 40);
+    strokeWeight(dimensions[1] / 200);
+    stroke(255, 255, 255);
+    strokeCap(ROUND);
+    rectMode(CENTER);
+    let rectHeight = 100;
+    if (height < 300) rectHeight = 50;
+    rect(middle[0], middle[1] * 1.3, width * 0.15, rectHeight);
+    rect(middle[0] * 0.6, middle[1] * 1.3, width * 0.15, rectHeight);
+    rect(middle[0] * 1.4, middle[1] * 1.3, width * 0.15, rectHeight);
+    textSize(rectHeight / 2);
+    fill(255);
+    noStroke();
+    textStyle(NORMAL);
+    text("About", middle[0] * 0.6, middle[1] * 1.33);
+    text("Play", middle[0], middle[1] * 1.33);
+    text("How To", middle[0] * 1.4, middle[1] * 1.33);
+    if (mouseIsPressed) {
+        if (mouseY < middle[1] * 1.3 + rectHeight / 2 && mouseY > middle[1] * 1.3 - rectHeight / 2) {
+            if (mouseX > middle[0] * 0.6 - width * 0.075 && mouseX < middle[0] * 0.6 + width * 0.075) {
+                state = "about";
+            }
+            if (mouseX > middle[0] - width * 0.075 && mouseX < middle[0] + width * 0.075) {
+                state = "pickMode";
+            }
+            if (mouseX > middle[0] * 1.4 - width * 0.075 && mouseX < middle[0] * 1.4 + width * 0.075) {
+                state = "howto";
             }
         }
     }
@@ -630,10 +672,59 @@ class Lightning {
     strokeWeight(height * 0.008);
     noFill();
     beginShape();
-    for (let i = 0; i < this.turns.length; i++) {
-      vertex(this.turns[i][0] * width, this.turns[i][1] * height);
+    if (this.dir == "right") {
+        for (let i = 0; i < this.turns.length; i++) {
+            vertex(this.turns[i][0] * width, this.turns[i][1] * height);
+        }
+        vertex(this.x * width, this.y * height);
+    } else {
+        for (let i = 0; i < this.turns.length; i++) {
+            vertex(width - this.turns[i][0] * width, this.turns[i][1] * height);
+        }
+        vertex(width - this.x * width, this.y * height);
     }
-    vertex(this.x * width, this.y * height);
     endShape();
   }
+}
+
+function drawAbout() {
+    textWrap(WORD);
+    textAlign(CENTER);
+    textSize(height * 0.04);
+    strokeWeight(height * 0.002);
+    let aboutText = "Shockey resembles a game of air hockey, but all movement is based on electric fields and Coulomb's " +
+        "law. The strikers and the puck cannot physically hit each other, but instead each carry a charge denoted by its " +
+        "appearance. Coulomb's law is used to calculate the force between each striker and the puck, which is translated " +
+        "into the puck's acceleration. The puck's movement is also affected by a small amount of friction from the surface, " +
+        "and it loses half of its velocity in each collision with the wall. To learn more about how to play the game, " +
+        "click the How To button.";
+    text(aboutText, middle[0], 25, width - 50);
+    textAlign(CENTER);
+    textStyle(BOLDITALIC);
+    fill(animationMetrics["alpha"], 150, 255 - animationMetrics['alpha'] + 40);
+    strokeWeight(dimensions[1] / 200);
+    stroke(255, 255, 255);
+    strokeCap(ROUND);
+    rectMode(CENTER);
+    let rectHeight = 100;
+    if (height < 300) rectHeight = 50;
+    rect(middle[0], middle[1] * 1.3, width * 0.15, rectHeight);
+    rect(middle[0] * 1.4, middle[1] * 1.3, width * 0.15, rectHeight);
+    textSize(rectHeight / 2);
+    fill(255);
+    noStroke();
+    textStyle(NORMAL);
+    text("Play", middle[0], middle[1] * 1.33);
+    text("How To", middle[0] * 1.4, middle[1] * 1.33);
+    if (mouseIsPressed) {
+        if (mouseY < middle[1] * 1.3 + rectHeight / 2 && mouseY > middle[1] * 1.3 - rectHeight / 2) {
+
+            if (mouseX > middle[0] - width * 0.075 && mouseX < middle[0] + width * 0.075) {
+                state = "pickMode";
+            }
+            if (mouseX > middle[0] * 1.4 - width * 0.075 && mouseX < middle[0] * 1.4 + width * 0.075) {
+                state = "howto";
+            }
+        }
+    }
 }
